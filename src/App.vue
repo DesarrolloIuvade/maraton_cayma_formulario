@@ -109,7 +109,8 @@ onUnmounted(() => {
 
 <template>
   <!-- Nav para el formulario (visible también cuando el modal de pago está abierto) -->
-  <nav v-if="currentStep === 'form' || currentStep === 'payment'" class="bg-green-600 text-white px-6 py-3 flex items-center gap-3">
+  <nav v-if="currentStep === 'form' || currentStep === 'payment'"
+    class="bg-green-600 text-white px-6 py-3 flex items-center gap-3">
     <img src="/images/logo.jpg" alt="Logo" class="w-8 h-8 rounded-full object-cover">
     <span class="font-semibold text-lg">Maratón Internacional de Cayma</span>
   </nav>
@@ -155,12 +156,12 @@ onUnmounted(() => {
           <button
             class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg py-3 transition-colors"
             @click="ingresarConCodigo">
-            INGRESAR CON CÓDIGO
+            CON CÓDIGO
           </button>
           <button
             class="w-full border border-green-600 text-green-600 hover:bg-green-50 font-semibold rounded-lg py-3 transition-colors"
             @click="ingresarSinCodigo">
-            INGRESAR SIN CÓDIGO
+            SIN CÓDIGO
           </button>
         </div>
       </div>
@@ -175,16 +176,14 @@ onUnmounted(() => {
         <button @click="errorMensaje = ''" class="text-red-400 hover:text-red-600 ml-2">&times;</button>
       </div>
       <!-- Overlay de carga -->
-      <div v-if="cargando"
-        class="absolute inset-0 bg-white/70 z-10 flex items-center justify-center rounded-2xl">
+      <div v-if="cargando" class="absolute inset-0 bg-white/70 z-10 flex items-center justify-center rounded-2xl">
         <p class="text-green-600 font-semibold text-lg">Procesando inscripción...</p>
       </div>
       <RegistroForm @registrar="onRegistroCompleto" @cancelar="onCancelar" />
     </div>
 
     <!-- Modal de pago (se renderiza como overlay via Teleport) -->
-    <PagoView v-if="currentStep === 'payment'" :datos="datosRegistro"
-      @volver="onCerrarPago" />
+    <PagoView v-if="currentStep === 'payment'" :datos="datosRegistro" @volver="onCerrarPago" />
 
     <div v-if="currentStep === 'done'" class="flex flex-col items-center gap-6 w-full max-w-md text-center">
       <div class="bg-white border border-gray-200 p-10 rounded-2xl shadow-2xl w-full flex flex-col items-center gap-4">

@@ -1,5 +1,5 @@
-const API_URL = 'https://siggo.municayma.gob.pe/planificacion/api/';
-// const API_URL = 'http://localhost/siggo/api/';
+// const API_URL = 'https://siggo.municayma.gob.pe/planificacion/api/';
+const API_URL = 'https://demo.iuvade.com/siggo/api/';
 
 async function apiGet(tgs, params = {}) {
   const url = new URL(API_URL + tgs + '/');
@@ -67,7 +67,6 @@ export async function categoriaDisponible() {
 
 export async function registrarOnline(values) {
   return await apiPost('maraton_registraronline', {
-    codigo: '111111',
     values: JSON.stringify(values),
   });
 }

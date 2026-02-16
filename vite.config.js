@@ -6,7 +6,7 @@ import vueDevTools from 'vite-plugin-vue-devtools';
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/maraton_cayma',
+  base: '/wp/wp-content/themes/maraton-vue/',
   plugins: [vue(), vueDevTools(), tailwindcss()],
   resolve: {
     alias: {

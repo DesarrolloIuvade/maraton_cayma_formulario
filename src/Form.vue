@@ -35,7 +35,10 @@ const contactoEmergencia = ref('')
 const telefonoEmergencia = ref('')
 const aceptaTerminos = ref(false)
 const buscandoDoc = ref(false)
+const expDeportiva = ref('')
+const errorCorreo = ref('')
 
+const categorias = ref([])
 const paises = ref([])
 const departamentos = ref([])
 const provincias = ref([])
@@ -123,12 +126,14 @@ watch([genero, fechaNacimiento], async ([sex, fecha]) => {
     categoria.value = ''
     categoriaNombre.value = ''
     categoriaMonto.value = ''
+    categorias.value = []
     if (!sex || !fecha) return
     const ano = new Date(fecha).getFullYear()
     try {
         const res = await fetchCategoria(sex, ano)
-        const cat = res.data?.[0]
-        if (cat) {
+        categorias.value = res.data || []
+        if (categorias.value.length === 1) {
+            const cat = categorias.value[0]
             categoria.value = cat.cat_ide || ''
             categoriaNombre.value = cat.cat_nom || ''
             categoriaMonto.value = cat.cat_mon || ''
@@ -141,6 +146,40 @@ watch([genero, fechaNacimiento], async ([sex, fecha]) => {
 function onDistritoChange(event) {
     const selectedOption = event.target.selectedOptions[0]
     distritoIde.value = selectedOption ? selectedOption.dataset.ide : ''
+}
+
+function soloNumeros(event) {
+    const val = event.target.value.replace(/\D/g, '')
+    event.target.value = val
+    return val
+}
+
+function onTelefonoInput(event) {
+    telefono.value = soloNumeros(event)
+}
+
+function onTelefonoEmergenciaInput(event) {
+    telefonoEmergencia.value = soloNumeros(event)
+}
+
+function validarCorreo() {
+    if (!correo.value) {
+        errorCorreo.value = ''
+        return
+    }
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    errorCorreo.value = regex.test(correo.value) ? '' : 'Ingrese un correo valido (ej: usuario@mail.com)'
+}
+
+function onCategoriaChange() {
+    const cat = categorias.value.find(c => c.cat_ide === categoria.value)
+    if (cat) {
+        categoriaNombre.value = cat.cat_nom || ''
+        categoriaMonto.value = cat.cat_mon || ''
+    } else {
+        categoriaNombre.value = ''
+        categoriaMonto.value = ''
+    }
 }
 
 function formatDate(dateStr) {
@@ -170,6 +209,7 @@ function registrar() {
         ins_con: contactoEmergencia.value,
         ins_t_c: telefonoEmergencia.value,
         ins_obs: observaciones.value,
+        ins_exp: expDeportiva.value,
         ins_cod: '000000',
         // Extras para display en UI (prefijo _ para diferenciar)
         _categoriaNombre: categoriaNombre.value,
@@ -268,12 +308,25 @@ function cancelar() {
                         </select>
                     </div>
                 </div>
-                <!-- Categoría (calculada automáticamente) -->
-                <div v-if="categoriaNombre" class="bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm">
-                    <span class="text-gray-600">Categoría asignada: </span>
-                    <span class="font-semibold text-green-700">{{ categoriaNombre }}</span>
-                    <span v-if="categoriaMonto" class="text-gray-500 ml-2">(S/ {{ categoriaMonto }})</span>
+                <!-- Categoría -->
+                <div v-if="categorias.length">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
+                    <select v-model="categoria" @change="onCategoriaChange"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <option value="">Seleccione categoria</option>
+                        <option v-for="c in categorias" :key="c.cat_ide" :value="c.cat_ide">
+                            {{ c.cat_nom }} (S/ {{ c.cat_mon }})
+                        </option>
+                    </select>
                 </div>
+
+                <!-- Experiencia deportiva -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Experiencia Deportiva</label>
+                    <textarea v-model="expDeportiva" placeholder="Experiencia Deportiva" rows="2"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"></textarea>
+                </div>
+
                 <!-- País de origen -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">País de origen</label>
@@ -306,13 +359,12 @@ function cancelar() {
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Distrito</label>
-                            <select v-model="distritoSel" :disabled="!provinciaSel"
-                                @change="onDistritoChange"
+                            <select v-model="distritoSel" :disabled="!provinciaSel" @change="onDistritoChange"
                                 class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-gray-100">
                                 <option value="">Seleccione</option>
                                 <option v-for="d in distritos" :key="d.ubi_ide" :value="d.ubi_dis"
                                     :data-ide="d.ubi_ide">{{ d.ubi_dis
-                                }}</option>
+                                    }}</option>
                             </select>
                         </div>
                     </div>
@@ -326,14 +378,20 @@ function cancelar() {
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-                        <input v-model="telefono" type="tel" placeholder="Teléfono"
+                        <input v-model="telefono" type="tel" inputmode="numeric" placeholder="Teléfono"
+                            @input="onTelefonoInput"
                             class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
                     </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
-                    <input v-model="correo" type="email" placeholder="correo@ejemplo.com"
-                        class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <input v-model="correo" type="email" placeholder="correo@ejemplo.com" @blur="validarCorreo"
+                        @input="errorCorreo = ''"
+                        :class="errorCorreo ? 'border-red-400 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500'"
+                        class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
+                    <span v-if="errorCorreo"
+                        class="inline-block mt-1 px-2 py-0.5 bg-red-100 text-red-600 text-xs rounded-full">{{
+                            errorCorreo }}</span>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
@@ -351,7 +409,8 @@ function cancelar() {
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-                            <input v-model="telefonoEmergencia" type="tel" placeholder="Teléfono de emergencia"
+                            <input v-model="telefonoEmergencia" type="tel" inputmode="numeric"
+                                placeholder="Teléfono de emergencia" @input="onTelefonoEmergenciaInput"
                                 class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
                         </div>
                     </div>

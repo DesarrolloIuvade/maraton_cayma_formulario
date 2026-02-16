@@ -16,7 +16,6 @@ async function pagarConNiubiz() {
     errorPago.value = ''
 
     try {
-        // Llamar a registrarOnline con los datos del formulario
         const res = await registrarOnline(props.datos)
 
         if (!res.success || !res.data) {
@@ -27,7 +26,6 @@ async function pagarConNiubiz() {
 
         const niubiz = res.data
 
-        // Cargar el checkout.js de Niubiz
         const script = document.createElement('script')
         script.src = niubiz.script
         script.onload = () => {
@@ -58,21 +56,37 @@ async function pagarConNiubiz() {
 </script>
 
 <template>
-    <!-- Backdrop del modal -->
     <Teleport to="body">
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-black/50" @click="emit('volver')"></div>
+        <!-- Overlay muted que bloquea toda interaccion -->
+        <div v-if="procesando" class="fixed inset-0 z-60 bg-black/60 flex items-center justify-center">
+            <div class="bg-white rounded-2xl shadow-xl p-8 flex flex-col items-center gap-4 max-w-sm mx-4">
+                <svg class="size-12 animate-spin text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none"
+                    viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                    </path>
+                </svg>
+                <p class="text-gray-800 font-semibold text-lg">Procesando pago...</p>
+                <p class="text-gray-500 text-sm text-center">Espere mientras se carga la pasarela de pago. No cierre
+                    esta ventana.</p>
+            </div>
+        </div>
 
-            <div class="relative z-10 w-full max-w-md">
+        <!-- Modal de pago -->
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/50" @click="!procesando && emit('volver')"></div>
+
+            <div class="relative z-10 w-full max-w-md" :class="{ 'pointer-events-none opacity-60': procesando }">
                 <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
                     <!-- Header -->
                     <div class="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
                         <div>
-                            <p class="font-semibold text-gray-800 text-lg">Pago de Inscripción</p>
-                            <p class="text-gray-400 text-xs">Maratón Internacional de Cayma</p>
+                            <p class="font-semibold text-gray-800 text-lg">Pago de Inscripcion</p>
+                            <p class="text-gray-400 text-xs">Maraton Internacional de Cayma</p>
                         </div>
-                        <button @click="emit('volver')"
-                            class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+                        <button @click="emit('volver')" :disabled="procesando"
+                            class="text-gray-400 hover:text-gray-600 text-2xl leading-none disabled:cursor-not-allowed">&times;</button>
                     </div>
 
                     <div class="p-6 flex flex-col gap-4">
@@ -82,7 +96,7 @@ async function pagarConNiubiz() {
                                 <span class="font-medium text-gray-800">{{ datos._nombreCompleto }}</span>
                             </div>
                             <div class="flex justify-between">
-                                <span class="text-gray-500">Categoría:</span>
+                                <span class="text-gray-500">Categoria:</span>
                                 <span class="font-medium text-gray-800">{{ datos._categoriaNombre }}</span>
                             </div>
                             <div class="flex justify-between">
@@ -106,11 +120,19 @@ async function pagarConNiubiz() {
 
                         <div class="flex flex-col gap-3 mt-2">
                             <button @click="pagarConNiubiz" :disabled="procesando"
-                                class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg py-3 transition-colors">
+                                class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg py-3 transition-colors flex items-center justify-center gap-2">
+                                <svg v-if="procesando" class="size-5 animate-spin" xmlns="http://www.w3.org/2000/svg"
+                                    fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                        stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                    </path>
+                                </svg>
                                 {{ procesando ? 'PROCESANDO...' : 'PAGAR' }}
                             </button>
-                            <button
-                                class="w-full border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold rounded-lg py-3 transition-colors"
+                            <button :disabled="procesando"
+                                class="w-full border border-gray-300 hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed text-gray-700 font-semibold rounded-lg py-3 transition-colors"
                                 @click="emit('volver')">
                                 Cancelar
                             </button>
