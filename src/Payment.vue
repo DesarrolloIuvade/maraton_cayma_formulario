@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onUnmounted } from 'vue';
 import { registrarOnline } from './api.js';
 
 const props = defineProps({
@@ -8,6 +8,7 @@ const props = defineProps({
 
 const emit = defineEmits(['volver'])
 const procesando = ref(false)
+const redirigiendo = ref(false)
 const errorPago = ref('')
 
 async function pagarConNiubiz() {
@@ -37,8 +38,9 @@ async function pagarConNiubiz() {
                 amount: niubiz.amount,
                 expirationminutes: '20',
                 timeouturl: 'about:blank',
-                action: niubiz.url,
+                action: niubiz.url + '?amount=' + niubiz.amount + '&purchaseNumber=' + niubiz.ide,
             })
+            // Hasta que se abra el checkout de Niubiz mostramos el loader
             VisanetCheckout.open()
             procesando.value = false
         }
@@ -57,19 +59,25 @@ async function pagarConNiubiz() {
 
 <template>
     <Teleport to="body">
-        <!-- Overlay muted que bloquea toda interaccion -->
-        <div v-if="procesando" class="fixed inset-0 z-60 bg-black/60 flex items-center justify-center">
-            <div class="bg-white rounded-2xl shadow-xl p-8 flex flex-col items-center gap-4 max-w-sm mx-4">
-                <svg class="size-12 animate-spin text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none"
+        <!-- Overlay de carga (abrir pasarela / confirmar pago) -->
+        <div v-if="procesando || redirigiendo" class="fixed inset-0 z-9999 bg-white flex items-center justify-center">
+            <div class="flex flex-col items-center gap-4 max-w-sm mx-4 text-center">
+                <svg class="size-14 animate-spin text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none"
                     viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor"
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
                     </path>
                 </svg>
-                <p class="text-gray-800 font-semibold text-lg">Procesando pago...</p>
-                <p class="text-gray-500 text-sm text-center">Espere mientras se carga la pasarela de pago. No cierre
-                    esta ventana.</p>
+                <p class="text-gray-800 font-semibold text-xl">
+                    {{ redirigiendo ? 'Confirmando pago...' : 'Procesando pago...' }}
+                </p>
+                <p class="text-gray-500 text-sm">
+                    {{ redirigiendo
+                        ? 'Espere mientras se confirma su transacción. No cierre ni recargue esta ventana.'
+                        : 'Espere mientras se carga la pasarela de pago. No cierre esta ventana.'
+                    }}
+                </p>
             </div>
         </div>
 

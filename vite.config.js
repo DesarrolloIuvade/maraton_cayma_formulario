@@ -6,11 +6,16 @@ import vueDevTools from 'vite-plugin-vue-devtools';
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/wp/wp-content/themes/maraton-vue/',
+  // base: '/wp/wp-content/themes/maraton-vue/',
+  base: '/',
   plugins: [vue(), vueDevTools(), tailwindcss()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  server: {
+    historyApiFallback: true,
+  },
+  appType: 'spa',
 });

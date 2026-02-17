@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import RegistroForm from './Form.vue';
 import PagoView from './Payment.vue';
-import { registrarEfectivo } from './api.js';
+import { registrarEfectivo, confirmarRegistro } from './api.js';
 
 const currentStep = ref('landing')
 const codigoAcceso = ref('')
@@ -10,6 +10,7 @@ const tieneCodigo = ref(false)
 const datosRegistro = ref(null)
 const errorMensaje = ref('')
 const cargando = ref(false)
+const confirmacionHtml = ref('')
 
 const endDate = new Date("2026-03-15T00:00:00")
 const meses = [
@@ -64,6 +65,11 @@ async function onRegistroCompleto(datos) {
       // Registro con codigo (efectivo)
       const res = await registrarEfectivo(codigoAcceso.value, datos)
       if (res.success) {
+        try {
+          confirmacionHtml.value = await confirmarRegistro(res.data || {})
+        } catch (e) {
+          console.error('Error obteniendo confirmación:', e)
+        }
         currentStep.value = 'done'
       } else {
         errorMensaje.value = res.message || 'Error al registrar inscripción'
@@ -95,6 +101,7 @@ function onVolverInicio() {
   codigoAcceso.value = ''
   tieneCodigo.value = false
   errorMensaje.value = ''
+  confirmacionHtml.value = ''
 }
 
 onMounted(() => {
@@ -167,14 +174,20 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Formulario con overlay de carga y errores (visible también cuando modal de pago está abierto) -->
-    <div v-if="currentStep === 'form' || currentStep === 'payment'" class="relative w-full flex flex-col items-center">
-      <!-- Mensaje de error -->
-      <div v-if="errorMensaje"
-        class="w-full max-w-2xl mb-4 bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700 flex items-center justify-between">
-        <span>{{ errorMensaje }}</span>
-        <button @click="errorMensaje = ''" class="text-red-400 hover:text-red-600 ml-2">&times;</button>
+    <!-- Toast de error global fijo -->
+    <Transition name="toast">
+      <div v-if="errorMensaje" class="fixed top-0 left-0 right-0 z-100 flex justify-center p-4 pointer-events-none">
+        <div
+          class="pointer-events-auto w-full max-w-2xl bg-red-600 text-white rounded-lg px-5 py-3 shadow-lg flex items-center justify-between gap-3">
+          <span class="text-sm font-medium">{{ errorMensaje }}</span>
+          <button @click="errorMensaje = ''"
+            class="text-white/80 hover:text-white text-xl leading-none shrink-0">&times;</button>
+        </div>
       </div>
+    </Transition>
+
+    <!-- Formulario con overlay de carga (visible también cuando modal de pago está abierto) -->
+    <div v-if="currentStep === 'form' || currentStep === 'payment'" class="relative w-full flex flex-col items-center">
       <!-- Overlay de carga -->
       <div v-if="cargando" class="absolute inset-0 bg-white/70 z-10 flex items-center justify-center rounded-2xl">
         <p class="text-green-600 font-semibold text-lg">Procesando inscripción...</p>
@@ -185,19 +198,35 @@ onUnmounted(() => {
     <!-- Modal de pago (se renderiza como overlay via Teleport) -->
     <PagoView v-if="currentStep === 'payment'" :datos="datosRegistro" @volver="onCerrarPago" />
 
-    <div v-if="currentStep === 'done'" class="flex flex-col items-center gap-6 w-full max-w-md text-center">
-      <div class="bg-white border border-gray-200 p-10 rounded-2xl shadow-2xl w-full flex flex-col items-center gap-4">
+    <div v-if="currentStep === 'done'" class="flex flex-col items-center gap-6 w-full max-w-2xl">
+      <div v-if="confirmacionHtml" class="w-full bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <iframe :srcdoc="confirmacionHtml" class="w-full border-0" style="min-height: 400px;"
+          @load="$event.target.style.height = $event.target.contentDocument.body.scrollHeight + 'px'"></iframe>
+      </div>
+      <div v-else
+        class="bg-white border border-gray-200 p-10 rounded-2xl shadow-2xl w-full flex flex-col items-center gap-4 text-center">
         <p class="text-green-600 text-5xl">&#10003;</p>
         <p class="font-bold text-gray-800 text-xl">Registro exitoso</p>
         <p class="text-gray-500 text-sm">Tu inscripción ha sido completada correctamente.</p>
-        <button
-          class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg py-3 transition-colors mt-4"
-          @click="onVolverInicio">
-          Volver al inicio
-        </button>
       </div>
+      <button
+        class="w-full max-w-md bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg py-3 transition-colors"
+        @click="onVolverInicio">
+        Volver al inicio
+      </button>
     </div>
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateY(-100%);
+}
+</style>

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import {
     pais as fetchPaises,
     departamento as fetchDepartamentos,
@@ -52,12 +52,12 @@ onMounted(async () => {
     }
 })
 
-// Busqueda automatica de DNI
-watch([documento, tipoDocumento], async ([doc, tipo]) => {
-    if (tipo !== 'DNI' || doc.length !== 8) return
+// Busqueda de DNI solo al perder foco
+async function buscarDNIBlur() {
+    if (tipoDocumento.value !== 'DNI' || documento.value.length !== 8) return
     buscandoDoc.value = true
     try {
-        const res = await buscarDocumento(doc)
+        const res = await buscarDocumento(documento.value)
         if (res.success && res.data) {
             apellidoPaterno.value = res.data.per_pat || ''
             apellidoMaterno.value = res.data.per_mat || ''
@@ -66,7 +66,6 @@ watch([documento, tipoDocumento], async ([doc, tipo]) => {
                 genero.value = res.data.per_sex
             }
             if (res.data.per_nac) {
-                // Convertir de DD/MM/YYYY a YYYY-MM-DD para input date
                 const parts = res.data.per_nac.split('/')
                 if (parts.length === 3) {
                     fechaNacimiento.value = `${parts[2]}-${parts[1]}-${parts[0]}`
@@ -78,6 +77,11 @@ watch([documento, tipoDocumento], async ([doc, tipo]) => {
     } finally {
         buscandoDoc.value = false
     }
+}
+
+const esPeru = computed(() => {
+    const p = paises.value.find(p => p.pai_ide === paisOrigen.value)
+    return p && p.pai_nom && p.pai_nom.toUpperCase().includes('PERU')
 })
 
 watch(paisOrigen, async () => {
@@ -88,7 +92,7 @@ watch(paisOrigen, async () => {
     departamentos.value = []
     provincias.value = []
     distritos.value = []
-    if (!paisOrigen.value) return
+    if (!paisOrigen.value || !esPeru.value) return
     try {
         departamentos.value = await fetchDepartamentos()
     } catch (e) {
@@ -122,26 +126,31 @@ watch(provinciaSel, async (prov) => {
     }
 })
 
-watch([genero, fechaNacimiento], async ([sex, fecha]) => {
-    categoria.value = ''
-    categoriaNombre.value = ''
-    categoriaMonto.value = ''
-    categorias.value = []
-    if (!sex || !fecha) return
-    const ano = new Date(fecha).getFullYear()
-    try {
-        const res = await fetchCategoria(sex, ano)
-        categorias.value = res.data || []
-        if (categorias.value.length === 1) {
-            const cat = categorias.value[0]
-            categoria.value = cat.cat_ide || ''
-            categoriaNombre.value = cat.cat_nom || ''
-            categoriaMonto.value = cat.cat_mon || ''
+// Buscar categoría con debounce para evitar llamadas excesivas
+let categoriaTimeout = null
+function buscarCategoriaBlur() {
+    if (categoriaTimeout) clearTimeout(categoriaTimeout)
+    categoriaTimeout = setTimeout(async () => {
+        categoria.value = ''
+        categoriaNombre.value = ''
+        categoriaMonto.value = ''
+        categorias.value = []
+        if (!genero.value || !fechaNacimiento.value) return
+        const ano = new Date(fechaNacimiento.value).getFullYear()
+        try {
+            const res = await fetchCategoria(genero.value, ano)
+            categorias.value = res.data || []
+            if (categorias.value.length === 1) {
+                const cat = categorias.value[0]
+                categoria.value = cat.cat_ide || ''
+                categoriaNombre.value = cat.cat_nom || ''
+                categoriaMonto.value = cat.cat_mon || ''
+            }
+        } catch (e) {
+            console.error('Error cargando categoría:', e)
         }
-    } catch (e) {
-        console.error('Error cargando categoría:', e)
-    }
-})
+    }, 500)
+}
 
 function onDistritoChange(event) {
     const selectedOption = event.target.selectedOptions[0]
@@ -181,6 +190,24 @@ function onCategoriaChange() {
         categoriaMonto.value = ''
     }
 }
+
+const camposCompletos = computed(() => {
+    return !!(
+        documento.value &&
+        apellidoPaterno.value &&
+        apellidoMaterno.value &&
+        nombres.value &&
+        genero.value &&
+        fechaNacimiento.value &&
+        correo.value && !errorCorreo.value &&
+        categoria.value &&
+        paisOrigen.value
+    )
+})
+
+watch(camposCompletos, (val) => {
+    if (!val) aceptaTerminos.value = false
+})
 
 function formatDate(dateStr) {
     if (!dateStr) return ''
@@ -246,7 +273,7 @@ function cancelar() {
                     <div class="col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Nro. documento</label>
                         <div class="relative">
-                            <input v-model="documento" type="text" placeholder="Documento"
+                            <input v-model="documento" type="text" placeholder="Documento" @blur="buscarDNIBlur"
                                 class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
                             <span v-if="buscandoDoc"
                                 class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">Buscando...</span>
@@ -276,11 +303,11 @@ function cancelar() {
                     <label class="block text-sm font-medium text-gray-700 mb-2">Género</label>
                     <div class="flex gap-6">
                         <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" v-model="genero" value="M" class="accent-green-600 w-4 h-4">
+                            <input type="radio" v-model="genero" value="M" @change="buscarCategoriaBlur" class="accent-green-600 w-4 h-4">
                             <span class="text-sm text-gray-700">Masculino</span>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" v-model="genero" value="F" class="accent-green-600 w-4 h-4">
+                            <input type="radio" v-model="genero" value="F" @change="buscarCategoriaBlur" class="accent-green-600 w-4 h-4">
                             <span class="text-sm text-gray-700">Femenino</span>
                         </label>
                     </div>
@@ -289,7 +316,7 @@ function cancelar() {
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de nacimiento</label>
-                        <input v-model="fechaNacimiento" type="date"
+                        <input v-model="fechaNacimiento" type="date" @blur="buscarCategoriaBlur"
                             class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
                     </div>
                     <div>
@@ -338,7 +365,7 @@ function cancelar() {
                 </div>
                 <!-- Departamento / Provincia / Distrito -->
                 <Transition name="slide">
-                    <div v-if="paisOrigen" class="grid grid-cols-3 gap-3">
+                    <div v-if="esPeru" class="grid grid-cols-3 gap-3">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Departamento</label>
                             <select v-model="departamentoSel"
@@ -416,13 +443,13 @@ function cancelar() {
                     </div>
                 </div>
                 <!-- Términos -->
-                <label class="flex items-start gap-2 cursor-pointer mt-2">
-                    <input type="checkbox" v-model="aceptaTerminos" class="accent-green-600 w-4 h-4 mt-0.5">
+                <label class="flex items-start gap-2 mt-2" :class="camposCompletos ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'">
+                    <input type="checkbox" v-model="aceptaTerminos" :disabled="!camposCompletos" class="accent-green-600 w-4 h-4 mt-0.5">
                     <span class="text-sm text-gray-600">Acepto los términos y condiciones</span>
                 </label>
                 <!-- Botones -->
                 <div class="flex gap-3 mt-4">
-                    <button type="submit" :disabled="!aceptaTerminos"
+                    <button type="submit" :disabled="!camposCompletos || !aceptaTerminos"
                         class="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg py-3 transition-colors">
                         REGISTRARME
                     </button>

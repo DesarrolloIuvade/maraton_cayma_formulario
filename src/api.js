@@ -77,3 +77,15 @@ export async function registrarEfectivo(codigo, values) {
     values: JSON.stringify(values),
   });
 }
+
+export async function confirmarRegistro(params = {}) {
+  const formData = new FormData();
+  for (const [key, value] of Object.entries(params)) {
+    formData.append(key, value);
+  }
+  const res = await fetch(API_URL + 'maraton_confirmarregistro/', {
+    method: 'POST',
+    body: formData,
+  });
+  return await res.text();
+}
