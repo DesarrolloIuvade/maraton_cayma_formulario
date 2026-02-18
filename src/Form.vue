@@ -31,6 +31,17 @@ const correo = ref('')
 const categoria = ref('')
 const categoriaNombre = ref('')
 const categoriaMonto = ref('')
+const tocados = ref({
+    documento: false,
+    apellidoPaterno: false,
+    apellidoMaterno: false,
+    nombres: false,
+    genero: false,
+    fechaNacimiento: false,
+    correo: false,
+    categoria: false,
+    paisOrigen: false,
+})
 const contactoEmergencia = ref('')
 const telefonoEmergencia = ref('')
 const aceptaTerminos = ref(false)
@@ -134,6 +145,7 @@ function buscarCategoriaBlur() {
         categoria.value = ''
         categoriaNombre.value = ''
         categoriaMonto.value = ''
+        tocados.value.categoria = false
         categorias.value = []
         if (!genero.value || !fechaNacimiento.value) return
         const ano = new Date(fechaNacimiento.value).getFullYear()
@@ -253,11 +265,11 @@ function cancelar() {
 
 <template>
     <div class="w-full max-w-2xl">
-        <img src="/images/banner.jpg" alt="Banner Maratón" class="w-full h-48 object-cover rounded">
         <!-- Card -->
         <div class="bg-white rounded-b-2xl shadow-xl p-8">
             <p class="text-gray-500 text-sm mb-1">Registro de Participante</p>
-            <p class="text-gray-600 text-sm mb-6">Para registrar tus datos, por favor rellene los campos de abajo.</p>
+            <p class="text-gray-600 text-sm mb-1">Para registrar tus datos, por favor rellene los campos de abajo.</p>
+            <p class="text-red-500 text-xs mb-6"><span class="font-semibold">*</span> Campos obligatorios</p>
             <form @submit.prevent="registrar" class="flex flex-col gap-4">
                 <!-- Documento -->
                 <div class="grid grid-cols-3 gap-3">
@@ -271,10 +283,13 @@ function cancelar() {
                         </select>
                     </div>
                     <div class="col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Nro. documento</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nro. documento <span
+                                class="text-red-500">*</span></label>
                         <div class="relative">
-                            <input v-model="documento" type="text" placeholder="Documento" @blur="buscarDNIBlur"
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <input v-model="documento" type="text" placeholder="Documento"
+                                @blur="buscarDNIBlur(); tocados.documento = true"
+                                :class="tocados.documento && !documento ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-green-500'"
+                                class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
                             <span v-if="buscandoDoc"
                                 class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">Buscando...</span>
                         </div>
@@ -283,41 +298,59 @@ function cancelar() {
                 <!-- Nombres -->
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Apellido paterno</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Apellido paterno <span
+                                class="text-red-500">*</span></label>
                         <input v-model="apellidoPaterno" type="text" placeholder="Apellido paterno"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                            @blur="tocados.apellidoPaterno = true"
+                            :class="tocados.apellidoPaterno && !apellidoPaterno ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-green-500'"
+                            class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Apellido materno</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Apellido materno <span
+                                class="text-red-500">*</span></label>
                         <input v-model="apellidoMaterno" type="text" placeholder="Apellido materno"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                            @blur="tocados.apellidoMaterno = true"
+                            :class="tocados.apellidoMaterno && !apellidoMaterno ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-green-500'"
+                            class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
                     </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre(s)</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre(s) <span
+                            class="text-red-500">*</span></label>
                     <input v-model="nombres" type="text" placeholder="Nombre(s)"
-                        class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                        @blur="tocados.nombres = true"
+                        :class="tocados.nombres && !nombres ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-green-500'"
+                        class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
                 </div>
                 <!-- Género -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Género</label>
-                    <div class="flex gap-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Género <span
+                            class="text-red-500">*</span></label>
+                    <div class="flex gap-6" @focusout="tocados.genero = true">
                         <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" v-model="genero" value="M" @change="buscarCategoriaBlur" class="accent-green-600 w-4 h-4">
+                            <input type="radio" v-model="genero" value="M" @change="buscarCategoriaBlur"
+                                class="accent-green-600 w-4 h-4">
                             <span class="text-sm text-gray-700">Masculino</span>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" v-model="genero" value="F" @change="buscarCategoriaBlur" class="accent-green-600 w-4 h-4">
+                            <input type="radio" v-model="genero" value="F" @change="buscarCategoriaBlur"
+                                class="accent-green-600 w-4 h-4">
                             <span class="text-sm text-gray-700">Femenino</span>
                         </label>
                     </div>
+                    <p v-if="tocados.genero && !genero" class="mt-1.5 text-xs text-red-500 font-medium">
+                        Seleccione su género para continuar
+                    </p>
                 </div>
                 <!-- Fecha y sangre -->
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de nacimiento</label>
-                        <input v-model="fechaNacimiento" type="date" @blur="buscarCategoriaBlur"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de nacimiento <span
+                                class="text-red-500">*</span></label>
+                        <input v-model="fechaNacimiento" type="date"
+                            @blur="buscarCategoriaBlur(); tocados.fechaNacimiento = true"
+                            :class="tocados.fechaNacimiento && !fechaNacimiento ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-green-500'"
+                            class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de sangre</label>
@@ -336,16 +369,42 @@ function cancelar() {
                     </div>
                 </div>
                 <!-- Categoría -->
-                <div v-if="categorias.length">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
-                    <select v-model="categoria" @change="onCategoriaChange"
-                        class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
-                        <option value="">Seleccione categoria</option>
-                        <option v-for="c in categorias" :key="c.cat_ide" :value="c.cat_ide">
-                            {{ c.cat_nom }} (S/ {{ c.cat_mon }})
-                        </option>
-                    </select>
-                </div>
+                <Transition name="cat-pop">
+                    <div v-if="categorias.length"
+                        class="rounded-xl border-2 border-green-500 bg-green-50 p-4 shadow-[0_0_0_4px_rgba(22,163,74,0.12)]">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="text-sm font-bold text-green-700 uppercase tracking-wide">Categoria <span
+                                    class="text-red-500">*</span></label>
+                        </div>
+                        <select v-model="categoria" @change="onCategoriaChange"
+                            @blur="tocados.categoria = true"
+                            :class="tocados.categoria && !categoria
+                                ? 'border-red-400 focus:ring-red-400 focus:border-red-400'
+                                : 'border-green-300 focus:ring-green-500 focus:border-green-500'"
+                            class="w-full border-2 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 bg-white font-medium text-gray-800 transition-colors">
+                            <option value="">Seleccione su categoria</option>
+                            <option v-for="c in categorias" :key="c.cat_ide" :value="c.cat_ide">
+                                {{ c.cat_nom }}
+                            </option>
+                        </select>
+                        <p v-if="tocados.categoria && !categoria"
+                            class="mt-1.5 text-xs text-red-500 font-medium flex items-center gap-1">
+                            <svg class="size-3.5 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+                            </svg>
+                            Seleccione una categoría para continuar
+                        </p>
+                        <p v-if="categoriaNombre"
+                            class="mt-2 text-xs text-green-700 font-semibold flex items-center gap-1">
+                            <svg class="size-3.5 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd"
+                                    d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            {{ categoriaNombre }}
+                        </p>
+                    </div>
+                </Transition>
 
                 <!-- Experiencia deportiva -->
                 <div>
@@ -356,9 +415,12 @@ function cancelar() {
 
                 <!-- País de origen -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">País de origen</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">País de origen <span
+                            class="text-red-500">*</span></label>
                     <select v-model="paisOrigen"
-                        class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                        @blur="tocados.paisOrigen = true"
+                        :class="tocados.paisOrigen && !paisOrigen ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-green-500'"
+                        class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
                         <option value="">Seleccione</option>
                         <option v-for="p in paises" :key="p.pai_ide" :value="p.pai_ide">{{ p.pai_nom }}</option>
                     </select>
@@ -372,7 +434,7 @@ function cancelar() {
                                 class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
                                 <option value="">Seleccione</option>
                                 <option v-for="d in departamentos" :key="d.ubi_ide" :value="d.ubi_dep">{{ d.ubi_dep
-                                }}</option>
+                                    }}</option>
                             </select>
                         </div>
                         <div>
@@ -381,7 +443,7 @@ function cancelar() {
                                 class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-gray-100">
                                 <option value="">Seleccione</option>
                                 <option v-for="p in provincias" :key="p.ubi_ide" :value="p.ubi_pro">{{ p.ubi_pro
-                                }}</option>
+                                    }}</option>
                             </select>
                         </div>
                         <div>
@@ -411,10 +473,12 @@ function cancelar() {
                     </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
-                    <input v-model="correo" type="email" placeholder="correo@ejemplo.com" @blur="validarCorreo"
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico <span
+                            class="text-red-500">*</span></label>
+                    <input v-model="correo" type="email" placeholder="correo@ejemplo.com"
+                        @blur="validarCorreo(); tocados.correo = true"
                         @input="errorCorreo = ''"
-                        :class="errorCorreo ? 'border-red-400 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500'"
+                        :class="(tocados.correo && !correo) || errorCorreo ? 'border-red-400 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500'"
                         class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
                     <span v-if="errorCorreo"
                         class="inline-block mt-1 px-2 py-0.5 bg-red-100 text-red-600 text-xs rounded-full">{{
@@ -443,8 +507,10 @@ function cancelar() {
                     </div>
                 </div>
                 <!-- Términos -->
-                <label class="flex items-start gap-2 mt-2" :class="camposCompletos ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'">
-                    <input type="checkbox" v-model="aceptaTerminos" :disabled="!camposCompletos" class="accent-green-600 w-4 h-4 mt-0.5">
+                <label class="flex items-start gap-2 mt-2"
+                    :class="camposCompletos ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'">
+                    <input type="checkbox" v-model="aceptaTerminos" :disabled="!camposCompletos"
+                        class="accent-green-600 w-4 h-4 mt-0.5">
                     <span class="text-sm text-gray-600">Acepto los términos y condiciones</span>
                 </label>
                 <!-- Botones -->
@@ -465,6 +531,53 @@ function cancelar() {
 </template>
 
 <style scoped>
+.cat-pop-enter-active {
+    animation:
+        cat-pop-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+        cat-shake 0.45s ease 0.38s;
+}
+
+.cat-pop-enter-from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.97);
+}
+
+@keyframes cat-pop-in {
+    from {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes cat-shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    20% {
+        transform: translateX(-6px);
+    }
+
+    40% {
+        transform: translateX(6px);
+    }
+
+    60% {
+        transform: translateX(-4px);
+    }
+
+    80% {
+        transform: translateX(4px);
+    }
+}
+
 .slide-enter-active,
 .slide-leave-active {
     transition: all 0.3s ease;

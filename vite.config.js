@@ -5,9 +5,8 @@ import vue from '@vitejs/plugin-vue';
 import vueDevTools from 'vite-plugin-vue-devtools';
 
 // https://vite.dev/config/
-export default defineConfig({
-  // base: '/wp/wp-content/themes/maraton-vue/',
-  base: '/',
+export default defineConfig(({ command }) => ({
+  base: command === 'serve' ? '/' : '/',
   plugins: [vue(), vueDevTools(), tailwindcss()],
   resolve: {
     alias: {
@@ -18,4 +17,4 @@ export default defineConfig({
     historyApiFallback: true,
   },
   appType: 'spa',
-});
+}));

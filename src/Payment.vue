@@ -11,48 +11,71 @@ const procesando = ref(false)
 const redirigiendo = ref(false)
 const errorPago = ref('')
 
+function loadNiubizScript(src) {
+    return new Promise((resolve, reject) => {
+        if (window.VisanetCheckout) {
+            resolve()
+            return
+        }
+        const existing = document.querySelector(`script[src="${src}"]`)
+        if (existing) {
+            existing.addEventListener('load', () => resolve(), { once: true })
+            existing.addEventListener('error', () => reject(new Error('Error al cargar Niubiz')), { once: true })
+            return
+        }
+        const script = document.createElement('script')
+        script.src = src
+        script.onload = () => resolve()
+        script.onerror = () => reject(new Error('Error al cargar la pasarela de pago'))
+        document.head.appendChild(script)
+
+    });
+}
+
 async function pagarConNiubiz() {
     if (procesando.value) return
     procesando.value = true
     errorPago.value = ''
-
+    // instentamos correr registrar online 
     try {
         const res = await registrarOnline(props.datos)
 
         if (!res.success || !res.data) {
             errorPago.value = res.message || 'Error al procesar el registro. Intente de nuevo.'
-            procesando.value = false
             return
         }
 
         const niubiz = res.data
 
-        const script = document.createElement('script')
-        script.src = niubiz.script
-        script.onload = () => {
-            VisanetCheckout.configure({
-                sessiontoken: niubiz.sessionkey,
-                channel: 'web',
-                merchantid: niubiz.merchantId,
-                purchasenumber: String(niubiz.ide),
-                amount: niubiz.amount,
-                expirationminutes: '20',
-                timeouturl: 'about:blank',
-                action: niubiz.url + '?amount=' + niubiz.amount + '&purchaseNumber=' + niubiz.ide,
-            })
-            // Hasta que se abra el checkout de Niubiz mostramos el loader
-            VisanetCheckout.open()
-            procesando.value = false
+        await loadNiubizScript(niubiz.script)
+
+        if (!window.VisanetCheckout) {
+            throw new Error('VisanetCehckout no disponible')
         }
-        script.onerror = () => {
-            procesando.value = false
-            errorPago.value = 'Error al cargar la pasarela de pago. Intente de nuevo.'
-        }
-        document.head.appendChild(script)
+
+        window.VisanetCheckout.configure({
+            sessiontoken: niubiz.sessionkey,
+            channel: 'web',
+            merchantid: niubiz.merchantId,
+            purchasenumber: String(niubiz.ide),
+            amount: niubiz.amount,
+            expirationminutes: '20',
+            timeouturl: 'about:blank',
+            action: niubiz.url + '?amount=' + niubiz.amount + '&purchaseNumber=' + niubiz.ide,
+        })
+
+        window.VisanetCheckout.open()
+        redirigiendo.value = true
+
     } catch (e) {
         console.error('Error en pago:', e)
         errorPago.value = 'Error de conexión. Intente de nuevo.'
         procesando.value = false
+        redirigiendo.value = false
+    } finally {
+        if (!redirigiendo.value) {
+            procesando.value = false
+        }
     }
 }
 </script>
@@ -70,11 +93,11 @@ async function pagarConNiubiz() {
                     </path>
                 </svg>
                 <p class="text-gray-800 font-semibold text-xl">
-                    {{ redirigiendo ? 'Confirmando pago...' : 'Procesando pago...' }}
+                    {{ redirigiendo ? 'Redireccionando...' : 'Procesando pago...' }}
                 </p>
                 <p class="text-gray-500 text-sm">
                     {{ redirigiendo
-                        ? 'Espere mientras se confirma su transacción. No cierre ni recargue esta ventana.'
+                        ? 'Espere mientras lo redireccionamos a la pasarela de pago. No cierre esta ventana.'
                         : 'Espere mientras se carga la pasarela de pago. No cierre esta ventana.'
                     }}
                 </p>
@@ -116,7 +139,7 @@ async function pagarConNiubiz() {
                         <div class="border-t border-gray-200 pt-4 flex justify-between items-center">
                             <span class="text-gray-500 text-sm">Monto a pagar:</span>
                             <span class="text-2xl font-bold text-green-600">S/ {{ datos?._categoriaMonto || '0.00'
-                                }}</span>
+                            }}</span>
                         </div>
 
                         <div v-if="errorPago"

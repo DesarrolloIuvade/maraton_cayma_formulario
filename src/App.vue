@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import RegistroForm from './Form.vue';
 import PagoView from './Payment.vue';
-import { registrarEfectivo, confirmarRegistro } from './api.js';
+import { registrarEfectivo, validarCodigo } from './api.js';
 
 const currentStep = ref('landing')
 const codigoAcceso = ref('')
@@ -10,6 +10,7 @@ const tieneCodigo = ref(false)
 const datosRegistro = ref(null)
 const errorMensaje = ref('')
 const cargando = ref(false)
+const validando = ref(false)
 const confirmacionHtml = ref('')
 
 const endDate = new Date("2026-03-15T00:00:00")
@@ -42,11 +43,28 @@ function actualizarContador() {
   }
 }
 
-function ingresarConCodigo() {
+async function ingresarConCodigo() {
   if (!codigoAcceso.value.trim()) return
-  tieneCodigo.value = true
-  currentStep.value = 'form'
   errorMensaje.value = ''
+  validando.value = true
+  try {
+    const res = await validarCodigo(codigoAcceso.value.trim())
+    if (!res.success) {
+      errorMensaje.value = res.message || 'Código no existe.'
+      return
+    }
+    if (res.visualizar) {
+      window.location.href = '/imprimir/' + codigoAcceso.value.trim()
+      return
+    }
+    tieneCodigo.value = true
+    currentStep.value = 'form'
+  } catch (e) {
+    console.error('Error al validar código:', e)
+    errorMensaje.value = 'Error de conexión. Intente de nuevo.'
+  } finally {
+    validando.value = false
+  }
 }
 
 function ingresarSinCodigo() {
@@ -65,12 +83,8 @@ async function onRegistroCompleto(datos) {
       // Registro con codigo (efectivo)
       const res = await registrarEfectivo(codigoAcceso.value, datos)
       if (res.success) {
-        try {
-          confirmacionHtml.value = await confirmarRegistro(res.data || {})
-        } catch (e) {
-          console.error('Error obteniendo confirmación:', e)
-        }
-        currentStep.value = 'done'
+        window.location.href = '/imprimir/' + codigoAcceso.value
+        return
       } else {
         errorMensaje.value = res.message || 'Error al registrar inscripción'
       }
@@ -161,9 +175,14 @@ onUnmounted(() => {
             class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
             @keyup.enter="ingresarConCodigo">
           <button
-            class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg py-3 transition-colors"
+            class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg py-3 transition-colors flex items-center justify-center gap-2"
+            :disabled="validando"
             @click="ingresarConCodigo">
-            CON CÓDIGO
+            <svg v-if="validando" class="size-5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ validando ? 'VALIDANDO...' : 'CON CÓDIGO' }}
           </button>
           <button
             class="w-full border border-green-600 text-green-600 hover:bg-green-50 font-semibold rounded-lg py-3 transition-colors"
@@ -188,10 +207,19 @@ onUnmounted(() => {
 
     <!-- Formulario con overlay de carga (visible también cuando modal de pago está abierto) -->
     <div v-if="currentStep === 'form' || currentStep === 'payment'" class="relative w-full flex flex-col items-center">
-      <!-- Overlay de carga -->
-      <div v-if="cargando" class="absolute inset-0 bg-white/70 z-10 flex items-center justify-center rounded-2xl">
-        <p class="text-green-600 font-semibold text-lg">Procesando inscripción...</p>
-      </div>
+      <!-- Overlay de carga fullscreen -->
+      <Teleport to="body">
+        <div v-if="cargando" class="fixed inset-0 z-9999 bg-white flex items-center justify-center">
+          <div class="flex flex-col items-center gap-4 max-w-sm mx-4 text-center">
+            <svg class="size-14 animate-spin text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="text-gray-800 font-semibold text-xl">Procesando inscripción...</p>
+            <p class="text-gray-500 text-sm">Espere mientras se registra su inscripción. No cierre ni recargue esta ventana.</p>
+          </div>
+        </div>
+      </Teleport>
       <RegistroForm @registrar="onRegistroCompleto" @cancelar="onCancelar" />
     </div>
 
