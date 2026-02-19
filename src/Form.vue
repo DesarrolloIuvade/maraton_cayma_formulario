@@ -266,13 +266,13 @@ function cancelar() {
 <template>
     <div class="w-full max-w-2xl">
         <!-- Card -->
-        <div class="bg-white rounded-b-2xl shadow-xl p-8">
+        <div class="bg-white rounded-b-2xl shadow-xl p-4 sm:p-8">
             <p class="text-gray-500 text-sm mb-1">Registro de Participante</p>
             <p class="text-gray-600 text-sm mb-1">Para registrar tus datos, por favor rellene los campos de abajo.</p>
             <p class="text-red-500 text-xs mb-6"><span class="font-semibold">*</span> Campos obligatorios</p>
             <form @submit.prevent="registrar" class="flex flex-col gap-4">
                 <!-- Documento -->
-                <div class="grid grid-cols-3 gap-3">
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Tipo documento</label>
                         <select v-model="tipoDocumento"
@@ -282,7 +282,7 @@ function cancelar() {
                             <option value="PASAPORTE">PASAPORTE</option>
                         </select>
                     </div>
-                    <div class="col-span-2">
+                    <div class="col-span-1 sm:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Nro. documento <span
                                 class="text-red-500">*</span></label>
                         <div class="relative">
@@ -296,7 +296,7 @@ function cancelar() {
                     </div>
                 </div>
                 <!-- Nombres -->
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Apellido paterno <span
                                 class="text-red-500">*</span></label>
@@ -343,7 +343,7 @@ function cancelar() {
                     </p>
                 </div>
                 <!-- Fecha y sangre -->
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de nacimiento <span
                                 class="text-red-500">*</span></label>
@@ -427,7 +427,7 @@ function cancelar() {
                 </div>
                 <!-- Departamento / Provincia / Distrito -->
                 <Transition name="slide">
-                    <div v-if="esPeru" class="grid grid-cols-3 gap-3">
+                    <div v-if="esPeru" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Departamento</label>
                             <select v-model="departamentoSel"
@@ -459,7 +459,7 @@ function cancelar() {
                     </div>
                 </Transition>
                 <!-- Contacto -->
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
                         <input v-model="direccion" type="text" placeholder="Dirección"
@@ -492,7 +492,7 @@ function cancelar() {
                 <!-- Emergencia -->
                 <div class="border-t border-gray-200 pt-4 mt-2">
                     <p class="text-sm font-semibold text-gray-700 mb-3">Contacto de emergencia</p>
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
                             <input v-model="contactoEmergencia" type="text" placeholder="Nombre del contacto"

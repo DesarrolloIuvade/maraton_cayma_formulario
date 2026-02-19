@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onUnmounted } from 'vue';
+import { ref, computed } from 'vue';
 import { registrarOnline } from './api.js';
 
 const props = defineProps({
@@ -10,6 +10,13 @@ const emit = defineEmits(['volver'])
 const procesando = ref(false)
 const redirigiendo = ref(false)
 const errorPago = ref('')
+
+// cat_mon ya incluye comisión → es el total exacto a cobrar
+const categoriaMonto = computed(() => Math.round(Number(props.datos?._categoriaMonto || 0) * 100) / 100)
+// Precio base: invertir la fórmula y redondear al entero más cercano (ej: 15.01 → 15)
+const categoriaMontoOriginal = computed(() => Math.round((categoriaMonto.value - 0.50) / 1.025))
+// Comisión: diferencia entre el total cobrado y el precio base
+const categoriaComision = computed(() => Math.round((categoriaMonto.value - categoriaMontoOriginal.value) * 100) / 100)
 
 function loadNiubizScript(src) {
     return new Promise((resolve, reject) => {
@@ -136,10 +143,19 @@ async function pagarConNiubiz() {
                             </div>
                         </div>
 
-                        <div class="border-t border-gray-200 pt-4 flex justify-between items-center">
-                            <span class="text-gray-500 text-sm">Monto a pagar:</span>
-                            <span class="text-2xl font-bold text-green-600">S/ {{ datos?._categoriaMonto || '0.00'
-                            }}</span>
+                        <div class="border-t border-gray-200 pt-4 flex flex-col gap-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-500 text-sm">Inscripcion:</span>
+                                <span class="font-semibold text-gray-800">S/ {{ categoriaMontoOriginal.toFixed(2) }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-500 text-sm">Comision:</span>
+                                <span class="font-semibold text-gray-800">S/ {{ categoriaComision.toFixed(2) }}</span>
+                            </div>
+                            <div class="flex justify-between items-center border-t border-gray-100 pt-2">
+                                <span class="text-gray-700 text-sm font-medium">Monto a pagar:</span>
+                                <span class="text-2xl font-bold text-green-600">S/ {{ categoriaMonto.toFixed(2) }}</span>
+                            </div>
                         </div>
 
                         <div v-if="errorPago"
