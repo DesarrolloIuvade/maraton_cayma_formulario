@@ -137,6 +137,16 @@ watch(provinciaSel, async (prov) => {
     }
 })
 
+function extraerAno(fecha) {
+    if (!fecha) return '';
+    if (fecha.includes('-')) {
+        return fecha.split('-')[0];
+    } else if (fecha.includes('/')) {
+        return fecha.split('/')[2];
+    }
+    return '';
+}
+
 // Buscar categoría con debounce para evitar llamadas excesivas
 let categoriaTimeout = null
 function buscarCategoriaBlur() {
@@ -148,7 +158,8 @@ function buscarCategoriaBlur() {
         tocados.value.categoria = false
         categorias.value = []
         if (!genero.value || !fechaNacimiento.value) return
-        const ano = new Date(fechaNacimiento.value).getFullYear()
+        const ano = extraerAno(fechaNacimiento.value);
+        console.log(ano);
         try {
             const res = await fetchCategoria(genero.value, ano)
             categorias.value = res.data || []
@@ -317,8 +328,7 @@ function cancelar() {
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Nombre(s) <span
                             class="text-red-500">*</span></label>
-                    <input v-model="nombres" type="text" placeholder="Nombre(s)"
-                        @blur="tocados.nombres = true"
+                    <input v-model="nombres" type="text" placeholder="Nombre(s)" @blur="tocados.nombres = true"
                         :class="tocados.nombres && !nombres ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-green-500'"
                         class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
                 </div>
@@ -376,11 +386,9 @@ function cancelar() {
                             <label class="text-sm font-bold text-green-700 uppercase tracking-wide">Categoria <span
                                     class="text-red-500">*</span></label>
                         </div>
-                        <select v-model="categoria" @change="onCategoriaChange"
-                            @blur="tocados.categoria = true"
-                            :class="tocados.categoria && !categoria
-                                ? 'border-red-400 focus:ring-red-400 focus:border-red-400'
-                                : 'border-green-300 focus:ring-green-500 focus:border-green-500'"
+                        <select v-model="categoria" @change="onCategoriaChange" @blur="tocados.categoria = true" :class="tocados.categoria && !categoria
+                            ? 'border-red-400 focus:ring-red-400 focus:border-red-400'
+                            : 'border-green-300 focus:ring-green-500 focus:border-green-500'"
                             class="w-full border-2 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 bg-white font-medium text-gray-800 transition-colors">
                             <option value="">Seleccione su categoria</option>
                             <option v-for="c in categorias" :key="c.cat_ide" :value="c.cat_ide">
@@ -390,7 +398,9 @@ function cancelar() {
                         <p v-if="tocados.categoria && !categoria"
                             class="mt-1.5 text-xs text-red-500 font-medium flex items-center gap-1">
                             <svg class="size-3.5 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+                                <path fill-rule="evenodd"
+                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z"
+                                    clip-rule="evenodd" />
                             </svg>
                             Seleccione una categoría para continuar
                         </p>
@@ -417,8 +427,7 @@ function cancelar() {
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">País de origen <span
                             class="text-red-500">*</span></label>
-                    <select v-model="paisOrigen"
-                        @blur="tocados.paisOrigen = true"
+                    <select v-model="paisOrigen" @blur="tocados.paisOrigen = true"
                         :class="tocados.paisOrigen && !paisOrigen ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-green-500'"
                         class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
                         <option value="">Seleccione</option>
@@ -476,8 +485,7 @@ function cancelar() {
                     <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico <span
                             class="text-red-500">*</span></label>
                     <input v-model="correo" type="email" placeholder="correo@ejemplo.com"
-                        @blur="validarCorreo(); tocados.correo = true"
-                        @input="errorCorreo = ''"
+                        @blur="validarCorreo(); tocados.correo = true" @input="errorCorreo = ''"
                         :class="(tocados.correo && !correo) || errorCorreo ? 'border-red-400 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500'"
                         class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2">
                     <span v-if="errorCorreo"
