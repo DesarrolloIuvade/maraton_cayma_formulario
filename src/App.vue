@@ -13,7 +13,7 @@ const cargando = ref(false)
 const validando = ref(false)
 const confirmacionHtml = ref('')
 
-const endDate = new Date("2026-03-15T00:00:00")
+const endDate = new Date("2026-03-22T00:00:00")
 const meses = [
   "enero", "febrero", "marzo", "abril", "mayo", "junio",
   "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
